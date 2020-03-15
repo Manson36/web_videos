@@ -1,0 +1,19 @@
+### /user:
+POST {{base_url}}/user
+Content-Type: {{contentType}}
+Cookie: {{cookie}}
+
+{
+
+}
+
+### /user:user_name
+POST {{base_url}}/user/manson
+Content-Type: {{contentType}}
+Cookie: {{cookie}}
+
+{
+
+}
+
+###
