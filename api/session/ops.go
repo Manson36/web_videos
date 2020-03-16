@@ -1,6 +1,13 @@
 package session
 
-import "sync"
+import (
+	"github.com/web_videos/api/dbops"
+	"github.com/web_videos/api/defs"
+	"github.com/web_videos/api/utils"
+	"log"
+	"sync"
+	"time"
+)
 
 /*
 session我们的主要操作是：
@@ -17,14 +24,56 @@ func init() {
 	sessionMap = &sync.Map{}
 }
 
-func LoadSessionsFromDB() {
+func nowInMilli() int64 {
+	return time.Now().UnixNano() / 1000000 //单位毫秒
+}
 
+func LoadSessionsFromDB() {
+	r, err := dbops.RetrieveAllSession()
+	if err != nil {
+		log.Println("Load sessions from db error:", err.Error())
+		return
+	}
+
+	r.Range(func(k, v interface{}) bool {
+		ss := v.(*defs.SimpleSession)
+		sessionMap.Store(k, ss)
+		return true
+	})
 }
 
 func GenerateNewSessionID(userName string) string {
+	id, err := utils.NewUUID()
+	if err != nil {
+		log.Println("")
+		return ""
+	}
+	ct := nowInMilli()
+	ttl := ct + 30*60*1000 //ServerSide session valid time :30 min
 
+	ss := &defs.SimpleSession{UserName: userName, TTL: ttl}
+	sessionMap.Store(id, ss)
+
+	dbops.InserSession(id, ttl, userName)
+	return id
+}
+
+func deleteExpiredSession(sid string) {
+	sessionMap.Delete(sid)
+	dbops.DeleteSession(sid)
 }
 
 func IsSessionExpired(sessionId string) (string, bool) {
+	ss, ok := sessionMap.Load(sessionId)
+	if ok {
+		ct := nowInMilli()
+		if ss.(*defs.SimpleSession).TTL < ct {
+			//delete expired session
+			deleteExpiredSession(sessionId)
+			return "", true
+		}
+		return ss.(*defs.SimpleSession).UserName, false
+	}
 
+	return "", true
 }
