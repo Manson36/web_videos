@@ -19,7 +19,7 @@ func NewRunner(size int, longLived bool, d, e fn) *Runner {
 	return &Runner{
 		Controller: make(controlChan, 1),
 		Error:      make(controlChan, 1),
-		Data:       make(dataChan, 1),
+		Data:       make(dataChan, size),
 		dataSize:   size,
 		longLived:  longLived,
 		Dispatcher: d,
@@ -35,8 +35,8 @@ func (r *Runner) startDispatch() {
 			close(r.Error)
 		}
 	}()
-
 	for {
+
 		select {
 		case c := <-r.Controller:
 			if c == READY_TO_DISPATCH {

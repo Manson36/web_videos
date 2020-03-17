@@ -176,10 +176,30 @@ no_buffer channel相当于是一个同步channel，当这个channel写进数据�
 > 实现是一个难点  
 
 ###Scheduler
+####Scheduler 内容介绍
 1. 什么是Scheduler？  
 顾名思义，Scheduler就是调度器，调度一些 我们通过普通的rest api 没有办法马上给他结果的任务，这些任务都会发送到Scheduler中，
  Scheduler会根据它的时间的interval来定时给他触发，或者是延时触发。Scheduler就是用来完成这种异步任务的。
- 2. Scheduler包含什么？
+2. Scheduler包含什么？
     * restful 的http server *用于接受任务*
     * Timer
     * 生产者/消费者模式下的task runner
+    
+#### 项目流程
+项目的整个流程：
+* user -> api service -> delete video
+* api service ->scheduler -> write video deletion record
+* timer -> runner -> read wvdr -> exec ->delete video from file
+
+1. api service: 创建路由和handler函数，将要删除的video_id 写入删除的表中
+2. scheduler：
+   创建Worker的结构，包含timer和runner
+3. runner:
+   * 首先我们要有一个runner的对象，
+   * 在runner中我们会跑一个常驻的任务(startDispatcher),整个任务会长时间的去等待这的一个runner的channel，这个channel分为两部分(
+      control channel/data channel),control channel是用来dispatcher和executor来相互交换信息，来提醒对方；data channel 是真正的数据部分
+   * runner_test:
+    * 执行runner.StartAll的时候，没有直接调用startAll，而是使用go routine，为什么？  
+	在StartAll中包含startDispatch函数，它内部有for的死循环(死循环中加forloop也可以破解)，如果我们不在后台以go routine的形式启动，
+	就会一直blocking(不断地写入数据，读取数据)，就不会执行到下面的time.sleep   
+**在go中我们有时会需要block整个进程，不让他运行结束，那么就有两种方式：一种是for的死循环，另一个是声明一个没有buffer的channel，不给里面写东西，直接去读**
