@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -7,7 +7,7 @@ import (
 )
 
 /*首先演示一下添加MiddleWare部分：
-1.在main中直接就是RegisterHandlers，它返回的是*httprouter.Router，实际上它是实现了http中的一个接口 http.Handler
+1.在main中直接就是RegisterHandlers，它返回的是*httpRouter.Router，实际上它是实现了http中的一个接口 http.Handler
 2.http.Handler接口 只有一个方法ServeHTTP(http.ResponseWriter, *http.Request)，duck type，只要实现了ServeHTTP 即可实现http.Handler
 */
 
